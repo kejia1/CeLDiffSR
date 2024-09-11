@@ -1,0 +1,109 @@
+model:
+  base_learning_rate: 4.5e-6
+  target: ldm.models.autoencoder.AutoencoderKL
+  params:
+    embed_dim: 3
+    monitor: "val/rec_loss"
+    # ckpt_path: /raw7/intern/biaowang5/code/LDMSR/models/first_stage_models/vq-f4/model.ckpt #/raw7/intern/biaowang5/code/LDM-SRtuning-main/models/first_stage_models/vq-f4/model.ckpt
+    lossconfig:
+      target: ldm.modules.losses.LPIPSWithDiscriminator
+      params:
+        disc_start: 50001
+        kl_weight: 0.000001
+        disc_weight: 0.5
+
+    ddconfig:
+      double_z: True
+      z_channels: 3
+      resolution: 256
+      in_channels: 3
+      out_ch: 3
+      ch: 128
+      ch_mult: [ 1,2,4 ]  # num_down = len(ch_mult)-1
+      num_res_blocks: 2
+      attn_resolutions: [ ]
+      dropout: 0.0
+
+
+data:
+  target: train_autoencoder.DataModuleFromConfig
+  params:
+    batch_size: 12
+    wrap: True
+    train:
+      # target: basicsr.data.realesrgan_dataset.RealESRGANDataset # ldm.data.imagenet.ImageNetSRTrain
+      gt_path: ['/raw7/intern/biaowang5/Data/DIV2K/DIV2K_train_HR','/raw7/intern/biaowang5/Data/Urban100/image_SRF_2','/raw7/intern/biaowang5/Data/Urban100/image_SRF_4','/raw7/intern/biaowang5/Data/BSD100/image_SRF_2','/raw7/intern/biaowang5/Data/BSD100/image_SRF_3','/raw7/intern/biaowang5/Data/BSD100/image_SRF_4','/raw7/intern/biaowang5/Data/Real_Data/train/Canon_Train/2','/raw7/intern/biaowang5/Data/Real_Data/train/Canon_Train/3','/raw7/intern/biaowang5/Data/Real_Data/train/Canon_Train/4','/raw7/intern/biaowang5/Data/Real_Data/train/Nikon_Train/2','/raw7/intern/biaowang5/Data/Real_Data/train/Nikon_Train/3','/raw7/intern/biaowang5/Data/Real_Data/train/Nikon_Train/4']
+      # params:
+        # size: 256
+        # degradation: pil_nearest
+      face_gt_path: '/mnt/lustre/share/jywang/dataset/FFHQ/1024/'
+      num_face: 10000
+      crop_size: 512
+      io_backend:
+        type: disk
+
+      blur_kernel_size: 21
+      kernel_list: ['iso', 'aniso', 'generalized_iso', 'generalized_aniso', 'plateau_iso', 'plateau_aniso']
+      kernel_prob: [0.45, 0.25, 0.12, 0.03, 0.12, 0.03]
+      sinc_prob: 0.1
+      blur_sigma: [0.2, 1.5]
+      betag_range: [0.5, 2.0]
+      betap_range: [1, 1.5]
+
+      blur_kernel_size2: 11
+      kernel_list2: ['iso', 'aniso', 'generalized_iso', 'generalized_aniso', 'plateau_iso', 'plateau_aniso']
+      kernel_prob2: [0.45, 0.25, 0.12, 0.03, 0.12, 0.03]
+      sinc_prob2: 0.1
+      blur_sigma2: [0.2, 1.0]
+      betag_range2: [0.5, 2.0]
+      betap_range2: [1, 1.5]
+
+      final_sinc_prob: 0.8
+
+      gt_size: 2040
+      use_hflip: True
+      use_rot: False
+    validation:
+      # target: basicsr.data.realesrgan_dataset.RealESRGANDataset # ldm.data.imagenet.ImageNetSRValidation
+      gt_path:   /raw7/intern/biaowang5/Data/Set14/image_SRF_2
+      crop_size: 512
+      io_backend:
+        type: disk
+
+      blur_kernel_size: 21
+      kernel_list: ['iso', 'aniso', 'generalized_iso', 'generalized_aniso', 'plateau_iso', 'plateau_aniso']
+      kernel_prob: [0.45, 0.25, 0.12, 0.03, 0.12, 0.03]
+      sinc_prob: 0.1
+      blur_sigma: [0.2, 1.5]
+      betag_range: [0.5, 2.0]
+      betap_range: [1, 1.5]
+
+      blur_kernel_size2: 11
+      kernel_list2: ['iso', 'aniso', 'generalized_iso', 'generalized_aniso', 'plateau_iso', 'plateau_aniso']
+      kernel_prob2: [0.45, 0.25, 0.12, 0.03, 0.12, 0.03]
+      sinc_prob2: 0.1
+      blur_sigma2: [0.2, 1.0]
+      betag_range2: [0.5, 2.0]
+      betap_range2: [1, 1.5]
+
+      final_sinc_prob: 0.8
+
+      gt_size: 128
+      use_hflip: True
+      use_rot: False
+      # params:
+      #   size: 256
+      #   degradation: pil_nearest
+
+lightning:
+  callbacks:
+    image_logger:
+      # target: train_autoencoder.ImageLogger
+      params:
+        batch_frequency: 1000
+        max_images: 8
+        increase_log_steps: True
+
+  trainer:
+    benchmark: True
+    accumulate_grad_batches: 2
